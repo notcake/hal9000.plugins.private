@@ -29,6 +29,8 @@ class GLuaGrep(Plugin):
 		self.gitRepositories["gcad"]               = "https://github.com/notcake/gcad.git"
 		self.gitRepositories["cac-administration"] = "https://github.com/notcake/cac-administration.git"
 		
+		self.gitRepositories["se2007"]             = "https://github.com/LestaD/SourceEngine2007.git"
+		
 		self.searchGroups = {}
 		self.searchGroups["default"]            = [("git", "garrysmod", "garrysmod/gamemodes/base",       "gamemodes/base"),
 		                                           ("git", "garrysmod", "garrysmod/gamemodes/sandbox",    "gamemodes/sandbox"),
@@ -82,15 +84,21 @@ class GLuaGrep(Plugin):
 		
 		self.searchGroups["all"] = all
 		self.searchGroups["*"] = all
+		
+		# Engine
+		self.searchGroups["source"]             = [("git", "se2007",           "",                                "")]
+		self.searchGroups["engine"]             = [("git", "se2007",           "",                                "")]
+		self.searchGroups["se2007"]             = [("git", "se2007",           "se2007",                          "se2007")]
+		self.searchGroups["src_main"]           = [("git", "se2007",           "src_main",                        "src_main")]
 	
 	# Plugin
 	def handleInitialize(self):
-		# self.registerCommand("git",    self.handleGit).setDescription("git")
+		self.registerCommand("git",   self.handleGit).setDescription("git")
 		
 		self.registerCommand("fgrep", self.handleSearch).setDescription("Searches the Garry's Mod codebase.").addParameter("addon name").addParameter("search text").setHelpText("where addon name is one of { " + ", ".join(sorted(self.searchGroups.keys())) + "}")
 		self.registerCommand("grep",  self.handleSearch).setDescription("Searches the Garry's Mod codebase.").addParameter("addon name").addParameter("search text").setHelpText("where addon name is one of { " + ", ".join(sorted(self.searchGroups.keys())) + "}")
 		
-		self.registerCommand("link",   self.handleLink).setDescription("Prints a link from the previous search.").addParameter("number")
+		self.registerCommand("link",  self.handleLink).setDescription("Prints a link from the previous search.").addParameter("number")
 	
 	def handleInitializeTemporaryChannelData(self, channel, channelData):
 		channelData["lastGrepLines"] = []
@@ -165,7 +173,10 @@ class GLuaGrep(Plugin):
 				aborted, matches = self.fgrep(searchText, directory)
 				
 				repositoryUrl = self.gitRepositories[repositoryId]
-				repositoryUrl = repositoryUrl[:-4] + "/tree/master/" + subdirectory + "/"
+				repositoryUrl = repositoryUrl[:-4] + "/tree/master/"
+				if len(subdirectory) > 0:
+					repositoryUrl += subdirectory + "/"
+				
 				for match in matches:
 					lines.append(("[%2d]" % len(lines)) + " " + mountDirectory + match)
 					
