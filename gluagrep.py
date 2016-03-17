@@ -181,7 +181,10 @@ class GLuaGrep(Plugin):
 					lines.append(("[%2d]" % len(lines)) + " " + mountDirectory + match)
 					
 					match = re.match("^([^:]+):([0-9]+):", match)
-					url = repositoryUrl + match.group(1) + "#L" + match.group(2)
+					if match is not None:
+						url = repositoryUrl + match.group(1) + "#L" + match.group(2)
+					else:
+						url = "error"
 					urls.append(url)
 				
 				if aborted: break
@@ -191,7 +194,7 @@ class GLuaGrep(Plugin):
 		urls  = urls[0:10]
 		
 		if len(lines) == 0:
-			message.channel.postMessage("No results found!")
+			message.channel.postMessage("No results found for " + repr(searchText) + "!")
 			return
 		
 		if not message.channel.isPrivateMessageChannel:
@@ -211,31 +214,36 @@ class GLuaGrep(Plugin):
 	def fgrep(self, searchText, directory):
 		output = None
 		try:
-			output = subprocess.check_output(["fgrep", "-i", "-n", "--binary-files=without-match", "-r", searchText, "."], cwd = directory)
+			output = subprocess.check_output(["fgrep", "-i", "-n", "--binary-files=text", "-r", searchText, "."], cwd = directory)
 		except:
 			output = b""
 		
-		output = output.decode("utf-8")
 		output = output.strip()
+		if output == b"": return False, []
 		
-		if output == "": return False, []
+		lines1 = output.split(b"\n")
 		
-		rawLines = output.split("\n")
+		lines2 = []
+		for line in lines1:
+			try:
+				lines2.append(line.decode("utf-8"))
+			except:
+				lines2.append(line.decode("latin-1"))
 		
-		prettifiedLines = []
+		lines3 = []
 		aborted = False
 		
-		for line in rawLines:
-			if len(prettifiedLines) > 10:
+		for line in lines2:
+			if len(lines3) > 10:
 				aborted = True
 				break
 			
 			if line[0:2] == "./":
 				line = line[2:]
 			
-			prettifiedLines.append(line)
+			lines3.append(line)
 		
-		return aborted, prettifiedLines
+		return aborted, lines3
 	
 	def updateRepositories(self, channel = None):
 		reply = []
